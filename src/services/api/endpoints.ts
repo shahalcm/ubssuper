@@ -46,4 +46,10 @@ export const ENDPOINTS = {
     BY_ID: (id: string) => `/content/stores/${id}`,
     PRODUCTS: (id: string) => `/content/stores/${id}/products`,
   },
+  NOTIFICATIONS: {
+    REGISTER_TOKEN: '/notifications/register-token',
+    UPDATE_TOKEN: '/notifications/update-token',
+    DELETE_TOKEN: '/notifications/delete-token',
+    TEST: '/notifications/test',
+  },
 };

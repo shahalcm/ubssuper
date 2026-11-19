@@ -71,6 +71,12 @@ export interface Store {
   isPureVeg?: boolean;
   latitude?: number;
   longitude?: number;
+  customerCare?: {
+    phoneCountryCode?: string;
+    phoneNumber?: string;
+    email?: string;
+    formattedPhone?: string;
+  };
   location?: {
     type: 'Point';
     coordinates: [number, number]; // [lng, lat]
@@ -131,6 +137,12 @@ export interface Restaurant {
   storeDescription?: string;
   deliveryFee?: number;
   minOrderAmount?: number;
+  customerCare?: {
+    phoneCountryCode?: string;
+    phoneNumber?: string;
+    email?: string;
+    formattedPhone?: string;
+  };
 }
 
 export interface Dish {

@@ -7,6 +7,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Notifications from 'expo-notifications';
+import {
+  registerForPushNotificationsAsync,
+  handleNotificationTap,
+  recordIncomingNotification,
+} from '@/services/notifications/pushNotificationService';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useCartStore } from '@/store/cartStore';
@@ -28,6 +34,7 @@ export default function RootLayout() {
 
   const isLoginModalOpen = useCartStore((state) => state.isLoginModalOpen);
   const closeLoginModal = useCartStore((state) => state.closeLoginModal);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   useEffect(() => {
     Promise.all([
@@ -37,6 +44,38 @@ export default function RootLayout() {
     ]).finally(() => {
       SplashScreen.hideAsync().catch(() => {});
     });
+  }, []);
+
+  // Register push notifications when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      registerForPushNotificationsAsync().catch((err) => {
+        console.warn('[RootLayout] Error registering push notifications:', err);
+      });
+    }
+  }, [isAuthenticated]);
+
+  // Push notification foreground and tap event listeners
+  useEffect(() => {
+    // Check if app was opened by a notification tap from killed state
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) {
+        handleNotificationTap(response);
+      }
+    });
+
+    const notificationListener = Notifications.addNotificationReceivedListener((notification) => {
+      recordIncomingNotification(notification);
+    });
+
+    const responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
+      handleNotificationTap(response);
+    });
+
+    return () => {
+      notificationListener.remove();
+      responseListener.remove();
+    };
   }, []);
 
   const theme = isDarkMode ? Colors.dark : Colors.light;

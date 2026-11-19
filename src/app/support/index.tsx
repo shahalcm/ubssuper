@@ -11,6 +11,7 @@ import { TextField } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft, HelpCircle, MessageSquare, Phone, Mail, ChevronDown, ChevronUp, Send, ShieldCheck, FileText, Trash2, ExternalLink } from 'lucide-react-native';
 import { openPrivacyPolicy, openDeleteAccountWebPage, openTermsAndConditions } from '@/utils/legal';
+import { openDialer, openEmail, UBS_OFFICIAL_CONTACT } from '@/utils/contact';
 
 const FAQS = [
   { q: 'How do I track my taxi or food delivery order?', a: 'You can view real-time status in the "My Orders" tab or on the active booking screen with live status updates.' },
@@ -60,22 +61,42 @@ export default function HelpSupportScreen() {
         <View style={styles.contactRow}>
           <TouchableOpacity
             style={[styles.contactCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
-            onPress={() => setShowChatModal(true)}
+            onPress={() => openDialer(UBS_OFFICIAL_CONTACT.phone)}
+            activeOpacity={0.7}
           >
-            <MessageSquare size={24} color={theme.primary} style={{ marginBottom: 6 }} />
-            <Text style={[styles.contactTitle, { color: theme.textPrimary }]}>Live Agent Chat</Text>
-            <Text style={[styles.contactSub, { color: theme.textSecondary }]}>24x7 Instant Response</Text>
+            <Phone size={24} color={theme.primary} style={{ marginBottom: 6 }} />
+            <Text style={[styles.contactTitle, { color: theme.textPrimary }]}>Call Hotline</Text>
+            <Text style={[styles.contactSub, { color: theme.primary, fontWeight: '700' }]}>{UBS_OFFICIAL_CONTACT.phone}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.contactCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
-            onPress={() => {}}
+            onPress={() => openEmail(UBS_OFFICIAL_CONTACT.email, 'UBS Super Support Inquiry')}
+            activeOpacity={0.7}
           >
-            <Phone size={24} color={theme.blue} style={{ marginBottom: 6 }} />
-            <Text style={[styles.contactTitle, { color: theme.textPrimary }]}>Call Hotline</Text>
-            <Text style={[styles.contactSub, { color: theme.textSecondary }]}>{APP_CONFIG.supportPhone}</Text>
+            <Mail size={24} color={theme.blue} style={{ marginBottom: 6 }} />
+            <Text style={[styles.contactTitle, { color: theme.textPrimary }]}>Email Support</Text>
+            <Text style={[styles.contactSub, { color: theme.textSecondary }]} numberOfLines={1}>{UBS_OFFICIAL_CONTACT.email}</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Live Chat Action Bar */}
+        <TouchableOpacity
+          style={[styles.chatBarBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
+          onPress={() => setShowChatModal(true)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.chatBarLeft}>
+            <View style={[styles.chatIconBox, { backgroundColor: '#DCFCE7' }]}>
+              <MessageSquare size={20} color="#16A34A" />
+            </View>
+            <View>
+              <Text style={[styles.chatBarTitle, { color: theme.textPrimary }]}>24x7 Live Agent Support</Text>
+              <Text style={[styles.chatBarSub, { color: theme.textSecondary }]}>Instant chat assistance with UBS support team</Text>
+            </View>
+          </View>
+          <Send size={16} color="#16A34A" />
+        </TouchableOpacity>
 
         {/* FAQs Accordion */}
         <View style={styles.sectionHeader}>
@@ -141,9 +162,19 @@ export default function HelpSupportScreen() {
         </View>
 
         <View style={styles.footerInfo}>
-          <Text style={[styles.infoTitle, { color: theme.textPrimary }]}>UBS Super Support Center</Text>
-          <Text style={[styles.infoSub, { color: theme.textMuted }]}>
-            Email: {APP_CONFIG.supportEmail} • Location: Manjeri, Malappuram, Kerala
+          <Text style={[styles.infoTitle, { color: theme.textPrimary }]}>UBS Global Customer Care</Text>
+          <TouchableOpacity onPress={() => openDialer(UBS_OFFICIAL_CONTACT.phone)} style={{ paddingVertical: 4 }}>
+            <Text style={[styles.infoSub, { color: theme.primary, fontWeight: '700' }]}>
+              📞 Phone: {UBS_OFFICIAL_CONTACT.phone}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => openEmail(UBS_OFFICIAL_CONTACT.email)} style={{ paddingVertical: 4 }}>
+            <Text style={[styles.infoSub, { color: theme.primary, fontWeight: '700' }]}>
+              ✉️ Email: {UBS_OFFICIAL_CONTACT.email}
+            </Text>
+          </TouchableOpacity>
+          <Text style={[styles.infoSub, { color: theme.textMuted, marginTop: 4 }]}>
+            Hours: {UBS_OFFICIAL_CONTACT.hours} • Location: Manjeri, Malappuram, Kerala
           </Text>
         </View>
       </ScrollView>
@@ -234,6 +265,36 @@ const styles = StyleSheet.create({
   contactSub: {
     fontSize: Typography.sizes.xs,
     textAlign: 'center',
+    marginTop: 2,
+  },
+  chatBarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    marginBottom: Spacing.md,
+  },
+  chatBarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  chatIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chatBarTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  chatBarSub: {
+    fontSize: 11,
     marginTop: 2,
   },
   sectionHeader: {

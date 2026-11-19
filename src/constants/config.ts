@@ -1,9 +1,10 @@
 // src/constants/config.ts
+import Constants from 'expo-constants';
 
 export const APP_CONFIG = {
   name: 'UBS Super',
   tagline: 'Book food, hotels, taxis & more in one app.',
-  version: '1.0.0',
+  version: Constants.expoConfig?.version || '1.0.7',
   defaultCurrency: 'INR',
   currencySymbol: '₹',
   defaultLocale: 'en-IN',
@@ -21,6 +22,6 @@ export const APP_CONFIG = {
     { name: 'Kozhikode', detail: 'Mavoor Road, Kozhikode' },
     { name: 'Kochi', detail: 'MG Road, Ernakulam, Kochi' },
   ],
-  supportPhone: '+91 98765 43210',
-  supportEmail: 'support@ubssuper.com',
+  supportPhone: '+91 95671 03008',
+  supportEmail: 'ubsglobal999@gmail.com',
 };

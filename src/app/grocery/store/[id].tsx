@@ -41,7 +41,10 @@ import {
   ShieldCheck,
   CheckCircle,
   Images,
+  Phone,
+  Mail,
 } from 'lucide-react-native';
+import { openDialer, openEmail, UBS_OFFICIAL_CONTACT } from '@/utils/contact';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -305,6 +308,71 @@ export default function GroceryStoreDetailScreen() {
             )}
           </View>
         </View>
+
+        {/* Contact Store Customer Care Section */}
+        {(() => {
+          const isStoreCareCustom = !!(
+            store.customerCare &&
+            ((store.customerCare.phoneNumber && store.customerCare.phoneNumber.trim().length > 0) ||
+              (store.customerCare.email && store.customerCare.email.trim().length > 0))
+          );
+          const storePhone = isStoreCareCustom && store.customerCare?.phoneNumber
+            ? `${store.customerCare.phoneCountryCode || '+91'} ${store.customerCare.phoneNumber}`
+            : UBS_OFFICIAL_CONTACT.phone;
+          const storeEmail = isStoreCareCustom && store.customerCare?.email
+            ? store.customerCare.email
+            : UBS_OFFICIAL_CONTACT.email;
+
+          return (
+            <View style={[styles.contactStoreCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <View style={styles.contactStoreHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Phone size={15} color="#16A34A" />
+                  <Text style={[styles.contactStoreHeading, { color: theme.textPrimary }]}>
+                    Contact Store
+                  </Text>
+                </View>
+                <View style={[styles.contactCareBadge, { backgroundColor: isStoreCareCustom ? '#DCFCE7' : '#EFF6FF' }]}>
+                  <Text style={[styles.contactCareBadgeText, { color: isStoreCareCustom ? '#15803D' : '#1D4ED8' }]}>
+                    {isStoreCareCustom ? 'Verified Store Support' : 'UBS Customer Care Fallback'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.contactStoreButtonsRow}>
+                {/* Clickable Phone Number */}
+                <TouchableOpacity
+                  style={[styles.contactStoreBtn, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}
+                  onPress={() => openDialer(storePhone)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.contactBtnIconWrap, { backgroundColor: '#DCFCE7' }]}>
+                    <Phone size={14} color="#16A34A" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.contactBtnLabel}>Store Phone</Text>
+                    <Text style={styles.contactBtnValue} numberOfLines={1}>{storePhone}</Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Clickable Email Address */}
+                <TouchableOpacity
+                  style={[styles.contactStoreBtn, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}
+                  onPress={() => openEmail(storeEmail, `Customer inquiry regarding ${store.name}`)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.contactBtnIconWrap, { backgroundColor: '#DBEAFE' }]}>
+                    <Mail size={14} color="#2563EB" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.contactBtnLabel}>Store Email</Text>
+                    <Text style={styles.contactBtnValue} numberOfLines={1}>{storeEmail}</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })()}
 
         {/* Store Photo Gallery Carousel (If photos uploaded by partner) */}
         {store.galleryImages && store.galleryImages.length > 0 && (
@@ -707,6 +775,63 @@ const styles = StyleSheet.create({
     borderTopColor: '#F1F5F9',
     flexWrap: 'wrap',
     gap: 6,
+  },
+  contactStoreCard: {
+    marginHorizontal: Spacing.md,
+    marginTop: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+  },
+  contactStoreHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
+  contactStoreHeading: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  contactCareBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
+  contactCareBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  contactStoreButtonsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  contactStoreBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+  },
+  contactBtnIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contactBtnLabel: {
+    fontSize: 10,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  contactBtnValue: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
   },
   metricItem: {
     flexDirection: 'row',

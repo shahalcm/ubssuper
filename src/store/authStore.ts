@@ -4,6 +4,7 @@ import { User } from '@/types';
 import { storage, secureStorage } from '@/utils/storage';
 import { apiClient } from '@/services/api/client';
 import { ENDPOINTS } from '@/services/api/endpoints';
+import { unregisterDeviceToken } from '@/services/notifications/pushNotificationService';
 
 interface AuthState {
   user: User | null;
@@ -295,6 +296,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     try {
+      await unregisterDeviceToken().catch(() => {});
       await apiClient.post(ENDPOINTS.AUTH.LOGOUT);
     } catch {
       // Local cleanup proceeds regardless

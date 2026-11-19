@@ -106,126 +106,8 @@ export const PROPERTY_PHOTO_PRESETS: PropertyPhotoPreset[] = [
   },
 ];
 
-const FALLBACK_PROPERTIES: RealEstateProperty[] = [
-  {
-    id: 'PR-10001',
-    propertyId: 'PR-10001',
-    title: '3 BHK Modern Luxury Villa in Manjeri',
-    description:
-      'Architect-designed luxury villa with modular kitchen, private lawn, solar power, and 2 covered car parks. Situated in a prime residential enclave along Calicut Road, minutes away from top schools and hospitals.',
-    propertyType: 'villa',
-    listingType: 'sale',
-    category: 'Residential',
-    price: 8500000,
-    location: 'Calicut Road, Manjeri, Malappuram',
-    address: 'Plot 14, Green Valley Enclave, Calicut Road',
-    city: 'Manjeri',
-    state: 'Kerala',
-    images: [
-      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80',
-    ],
-    bedrooms: 3,
-    bathrooms: 3,
-    area: '2400 sq.ft',
-    amenities: [
-      'Private Garden',
-      'Solar Power',
-      'Covered Parking',
-      '24x7 Security',
-      'Borewell & KWA Water',
-      'Furnished Kitchen',
-    ],
-    contactName: 'Niyas Rahman',
-    contactPhone: '+91 98765 43210',
-    postedBy: 'Verified Builder',
-    isPaid: true,
-    status: 'approved',
-    approvalStatus: 'approved',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'PR-10002',
-    propertyId: 'PR-10002',
-    title: '2 BHK Waterfront Apartment in Kochi',
-    description:
-      'Spectacular lake-view premium apartment on Marine Drive with balcony sunset views and clubhouse amenities. Features imported vitrified tiles, 24h backup generator, and dedicated parking.',
-    propertyType: 'apartment',
-    listingType: 'rent',
-    category: 'Residential',
-    price: 24000,
-    location: 'Marine Drive, Ernakulam, Kochi',
-    address: 'Floor 11, Bayview Towers, Marine Drive',
-    city: 'Kochi',
-    state: 'Kerala',
-    images: [
-      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80',
-    ],
-    bedrooms: 2,
-    bathrooms: 2,
-    area: '1250 sq.ft',
-    amenities: [
-      'Swimming Pool',
-      'Gym & Clubhouse',
-      'Covered Parking',
-      'High Speed Lifts',
-      '24x7 Security',
-      'Balcony Deck',
-    ],
-    contactName: 'Anil Kumar',
-    contactPhone: '+91 98460 11223',
-    postedBy: 'Direct Owner',
-    isPaid: true,
-    status: 'approved',
-    approvalStatus: 'approved',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'PR-10003',
-    propertyId: 'PR-10003',
-    title: '4 BHK Malabar Heritage Mansion in Kozhikode',
-    description:
-      'Majestic heritage-styled independent mansion with landscaped courtyard, teakwood interiors, open terrace garden, and servant quarters. Located in an elite residential corridor of Kozhikode.',
-    propertyType: 'villa',
-    listingType: 'sale',
-    category: 'Residential',
-    price: 18500000,
-    location: 'Wayanad Road, Kozhikode',
-    address: 'Hilltop Enclave, Wayanad Road',
-    city: 'Kozhikode',
-    state: 'Kerala',
-    images: [
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80',
-    ],
-    bedrooms: 4,
-    bathrooms: 4,
-    area: '3800 sq.ft',
-    amenities: [
-      'Private Garden',
-      'Solar Power',
-      'Covered Parking',
-      'CCTV Surveillance',
-      'Servant Quarters',
-      'Balcony Deck',
-    ],
-    contactName: 'Faizal Basheer',
-    contactPhone: '+91 97450 99887',
-    postedBy: 'Verified Builder',
-    isPaid: true,
-    status: 'approved',
-    approvalStatus: 'approved',
-    createdAt: new Date().toISOString(),
-  },
-];
+// No fake seed properties - only genuine properties created by user or fetched from backend
+const FALLBACK_PROPERTIES: RealEstateProperty[] = [];
 
 let inMemoryUserProperties: RealEstateProperty[] = [];
 
@@ -254,7 +136,18 @@ export const realEstateService = {
   },
 
   /**
-   * Fetches approved properties for public feed
+   * Uploads an image to Cloudinary via backend endpoint
+   */
+  async uploadImage(base64DataUri: string): Promise<{ url: string; publicId: string }> {
+    const res: any = await apiClient.post('/real-estate/upload-image', { image: base64DataUri });
+    if (res && (res.url || res.data?.url)) {
+      return res.data || res;
+    }
+    throw new Error('Cloudinary photo upload failed');
+  },
+
+  /**
+   * Fetches approved and active properties for public feed
    */
   async getProperties(params?: {
     search?: string;
@@ -265,26 +158,39 @@ export const realEstateService = {
     try {
       const query = new URLSearchParams(params as any).toString();
       const res: any = await apiClient.get(`/real-estate/properties?${query}`);
+      let serverProps: RealEstateProperty[] = [];
       if (res?.properties && Array.isArray(res.properties)) {
-        return res.properties.map((p: any) => ({
+        serverProps = res.properties.map((p: any) => ({
           ...p,
           id: p.propertyId || p._id || p.id,
         }));
       }
-    } catch {
-      // Fallback
-    }
 
-    let list = [...FALLBACK_PROPERTIES];
-    if (params?.search) {
-      const q = params.search.toLowerCase();
-      list = list.filter((p) => p.title.toLowerCase().includes(q) || p.location.toLowerCase().includes(q));
+      // Merge newly added local properties so user immediately sees their listed property
+      const localApproved = inMemoryUserProperties.filter(
+        (p) =>
+          (p.isPaid || p.status === 'approved' || p.approvalStatus === 'approved') &&
+          !serverProps.some((sp) => sp.propertyId === p.propertyId)
+      );
+
+      let combined = [...localApproved, ...serverProps];
+
+      if (params?.search) {
+        const q = params.search.toLowerCase();
+        combined = combined.filter((p) => p.title?.toLowerCase().includes(q) || p.location?.toLowerCase().includes(q));
+      }
+      if (params?.listingType && params.listingType !== 'All') {
+        const target = params.listingType.toLowerCase().includes('rent') ? 'rent' : 'sale';
+        combined = combined.filter((p) => p.listingType === target);
+      }
+
+      return combined;
+    } catch {
+      // Offline fallback: only user-created properties
+      return inMemoryUserProperties.filter(
+        (p) => p.isPaid || p.status === 'approved' || p.approvalStatus === 'approved'
+      );
     }
-    if (params?.listingType && params.listingType !== 'All') {
-      const target = params.listingType.toLowerCase().includes('rent') ? 'rent' : 'sale';
-      list = list.filter((p) => p.listingType === target);
-    }
-    return list;
   },
 
   /**
@@ -293,16 +199,21 @@ export const realEstateService = {
   async getMyProperties(): Promise<RealEstateProperty[]> {
     try {
       const res: any = await apiClient.get('/real-estate/my-properties');
+      let serverProps: RealEstateProperty[] = [];
       if (Array.isArray(res)) {
-        return res.map((p: any) => ({
+        serverProps = res.map((p: any) => ({
           ...p,
           id: p.propertyId || p._id || p.id,
         }));
       }
+
+      const localUnique = inMemoryUserProperties.filter(
+        (p) => !serverProps.some((sp) => sp.propertyId === p.propertyId)
+      );
+      return [...localUnique, ...serverProps];
     } catch {
-      // Fallback
+      return inMemoryUserProperties;
     }
-    return inMemoryUserProperties;
   },
 
   /**
@@ -327,13 +238,7 @@ export const realEstateService = {
     );
     if (userProp) return userProp;
 
-    // Check fallback verified properties
-    const fallbackProp = FALLBACK_PROPERTIES.find(
-      (p) => p.propertyId === propertyId || p.id === propertyId
-    );
-    if (fallbackProp) return fallbackProp;
-
-    return FALLBACK_PROPERTIES[0] || null;
+    return null;
   },
 
   /**
@@ -376,9 +281,7 @@ export const realEstateService = {
       address: data.address,
       city: data.city || 'Manjeri',
       state: 'Kerala',
-      images: data.images?.length > 0 ? data.images : [
-        'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80',
-      ],
+      images: data.images?.length > 0 ? data.images : [],
       bedrooms: Number(data.bedrooms) || 0,
       bathrooms: Number(data.bathrooms) || 0,
       area: data.area,
@@ -388,8 +291,8 @@ export const realEstateService = {
       postedBy: 'Direct Owner',
       listingFeeAmount: fee,
       isPaid: isFree,
-      status: isFree ? 'under_review' : 'pending_payment',
-      approvalStatus: 'pending',
+      status: isFree ? 'approved' : 'pending_payment',
+      approvalStatus: isFree ? 'approved' : 'pending',
       createdAt: new Date().toISOString(),
     };
 
@@ -428,7 +331,7 @@ export const realEstateService = {
       orderId: `order_${propertyId}_${Date.now().toString().slice(-4)}`,
       amount: feeConfig.amount,
       currency: 'INR',
-      keyId: 'rzp_test_ubssuper_realestate',
+      keyId: 'rzp_live_TTgjOa6lPui9HK',
       propertyId,
     };
   },
@@ -448,8 +351,9 @@ export const realEstateService = {
         const found = inMemoryUserProperties.find((p) => p.propertyId === payload.propertyId);
         if (found) {
           found.isPaid = true;
-          found.status = 'under_review';
-          found.approvalStatus = 'pending';
+          found.status = 'approved';
+          found.approvalStatus = 'approved';
+          found.paymentId = res.paymentId;
         }
         return res;
       }
@@ -460,15 +364,15 @@ export const realEstateService = {
     const prop = inMemoryUserProperties.find((p) => p.propertyId === payload.propertyId);
     if (prop) {
       prop.isPaid = true;
-      prop.status = 'under_review';
-      prop.approvalStatus = 'pending';
+      prop.status = 'approved';
+      prop.approvalStatus = 'approved';
       prop.paymentId = `PLP-${Date.now().toString().slice(-6)}`;
     }
 
     return {
       success: true,
-      property: prop || (FALLBACK_PROPERTIES[0] as any),
-      paymentId: `PLP-${Date.now().toString().slice(-6)}`,
+      property: prop as any,
+      paymentId: prop?.paymentId || `PLP-${Date.now().toString().slice(-6)}`,
     };
   },
 };

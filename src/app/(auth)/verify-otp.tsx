@@ -164,8 +164,6 @@ export default function VerifyOtpScreen() {
                 {errorMessage}
               </Text>
             ) : null}
-
-
           </View>
 
           <View style={styles.otpRow}>

@@ -27,6 +27,7 @@ import { MOCK_RECENT_ORDERS, MOCK_GROCERY_PRODUCTS } from '@/services/mock/data'
 import { Order } from '@/types';
 import { apiClient } from '@/services/api/client';
 import { ENDPOINTS } from '@/services/api/endpoints';
+import { RazorpayCheckoutModal } from '@/components/modals/RazorpayCheckoutModal';
 import {
   ArrowLeft,
   MapPin,
@@ -54,7 +55,11 @@ import {
   FileText,
   Sparkles,
   Navigation,
+  Mail,
+  Headphones,
+  X,
 } from 'lucide-react-native';
+import { openDialer, openEmail, UBS_OFFICIAL_CONTACT } from '@/utils/contact';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -72,6 +77,7 @@ export default function OrderDetailScreen() {
   const [isRetryingPayment, setIsRetryingPayment] = useState(false);
   const [isRazorpayRetryModal, setIsRazorpayRetryModal] = useState(false);
   const [retryRazorpayData, setRetryRazorpayData] = useState<any | null>(null);
+  const [showSupportModal, setShowSupportModal] = useState(false);
 
   const fetchLiveOrderDetail = async () => {
     setIsLoadingOrder(true);
@@ -85,6 +91,44 @@ export default function OrderDetailScreen() {
       // Fallback to mock
     } finally {
       setIsLoadingOrder(false);
+    }
+  };
+
+  const handleInitiateRetryPayment = async () => {
+    setIsRetryingPayment(true);
+    try {
+      const res: any = await apiClient.post(`/orders/${orderId}/retry-payment`);
+      const rzpData = res?.data?.razorpayOrder || res?.razorpayOrder;
+      if (rzpData) {
+        setRetryRazorpayData(rzpData);
+        setIsRazorpayRetryModal(true);
+      } else {
+        Alert.alert('Payment Retry', 'Could not initialize payment retry. Please check network.');
+      }
+    } catch (err: any) {
+      Alert.alert('Payment Error', err.message || 'Payment retry initialization failed');
+    } finally {
+      setIsRetryingPayment(false);
+    }
+  };
+
+  const handleVerifyRetrySuccess = async (paymentResult: {
+    razorpay_payment_id: string;
+    razorpay_order_id: string;
+    razorpay_signature: string;
+  }) => {
+    try {
+      await apiClient.post(ENDPOINTS.ORDERS.VERIFY_PAYMENT, {
+        orderId,
+        razorpayOrderId: paymentResult.razorpay_order_id,
+        razorpayPaymentId: paymentResult.razorpay_payment_id,
+        razorpaySignature: paymentResult.razorpay_signature,
+      });
+      setIsRazorpayRetryModal(false);
+      showToast('Payment verified successfully!');
+      fetchLiveOrderDetail();
+    } catch (err: any) {
+      Alert.alert('Verification Failed', err.message || 'Cryptographic signature verification failed.');
     }
   };
 
@@ -449,6 +493,50 @@ export default function OrderDetailScreen() {
           { paddingBottom: Math.max(Spacing.xxl * 2, insets.bottom + 50) },
         ]}
       >
+        {/* 🌟 PENDING PAYMENT RETRY BANNER */}
+        {isPendingPayment && (
+          <View
+            style={{
+              backgroundColor: '#FEF3C7',
+              borderColor: '#F59E0B',
+              borderWidth: 1,
+              borderRadius: BorderRadius.md,
+              padding: Spacing.md,
+              marginBottom: Spacing.md,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <View style={{ flex: 1, marginRight: Spacing.sm }}>
+              <Text style={{ fontSize: 14, fontWeight: Typography.weights.bold, color: '#92400E' }}>
+                Payment Pending
+              </Text>
+              <Text style={{ fontSize: 12, fontWeight: Typography.weights.regular, color: '#B45309' }}>
+                Order #{order.id} is pending payment. Click to complete payment via Razorpay.
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={handleInitiateRetryPayment}
+              disabled={isRetryingPayment}
+              style={{
+                backgroundColor: '#16A34A',
+                paddingHorizontal: Spacing.md,
+                paddingVertical: Spacing.sm,
+                borderRadius: BorderRadius.sm,
+              }}
+            >
+              {isRetryingPayment ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={{ color: '#FFFFFF', fontWeight: Typography.weights.semibold, fontSize: 13 }}>
+                  Pay Now
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* 🌟 HERO SERVICE & STATUS OVERVIEW CARD */}
         <View
           style={[
@@ -873,7 +961,7 @@ export default function OrderDetailScreen() {
             <TouchableOpacity
               style={[styles.actionHalfBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
               activeOpacity={0.8}
-              onPress={() => router.push('/support')}
+              onPress={() => setShowSupportModal(true)}
             >
               <HelpCircle size={15} color="#2563EB" style={{ marginRight: 6 }} />
               <Text style={[styles.actionHalfBtnText, { color: '#2563EB' }]}>
@@ -883,6 +971,104 @@ export default function OrderDetailScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Razorpay Retry Checkout Modal */}
+      <RazorpayCheckoutModal
+        visible={isRazorpayRetryModal}
+        options={
+          retryRazorpayData
+            ? {
+                keyId: retryRazorpayData.keyId,
+                orderId: retryRazorpayData.id || retryRazorpayData.orderId,
+                amount: retryRazorpayData.amount,
+                amountInPaise: retryRazorpayData.amountInPaise || Math.round(retryRazorpayData.amount * 100),
+                currency: retryRazorpayData.currency || 'INR',
+                name: 'UBS Super Marketplace',
+                description: `Payment for Order #${order.id}`,
+                onSuccess: handleVerifyRetrySuccess,
+                onFailure: (err) => Alert.alert('Payment Failed', err.message),
+                onCancel: () => setIsRazorpayRetryModal(false),
+              }
+            : null
+        }
+        onClose={() => setIsRazorpayRetryModal(false)}
+      />
+
+      {/* Order Support Modal */}
+      <Modal visible={showSupportModal} transparent animationType="fade">
+        <View style={styles.supportModalOverlay}>
+          <View style={[styles.supportModalContent, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <View style={styles.supportModalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Headphones size={20} color={theme.primary} />
+                <Text style={[styles.supportModalTitle, { color: theme.textPrimary }]}>
+                  Order Support & Care
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowSupportModal(false)}>
+                <X size={20} color={theme.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.supportModalSub, { color: theme.textSecondary }]}>
+              Need assistance with Order #{order.id}? Connect with our 24/7 UBS Customer Care desk.
+            </Text>
+
+            {/* Call Action */}
+            <TouchableOpacity
+              style={[styles.supportActionRow, { backgroundColor: theme.surface, borderColor: theme.border }]}
+              onPress={() => {
+                setShowSupportModal(false);
+                openDialer(UBS_OFFICIAL_CONTACT.phone);
+              }}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.supportIconWrap, { backgroundColor: '#DCFCE7' }]}>
+                <Phone size={18} color="#16A34A" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.supportActionTitle, { color: theme.textPrimary }]}>Call UBS Hotline</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: theme.primary, marginTop: 1 }}>
+                  {UBS_OFFICIAL_CONTACT.phone}
+                </Text>
+              </View>
+              <ChevronRight size={16} color={theme.textSecondary} />
+            </TouchableOpacity>
+
+            {/* Email Action */}
+            <TouchableOpacity
+              style={[styles.supportActionRow, { backgroundColor: theme.surface, borderColor: theme.border }]}
+              onPress={() => {
+                setShowSupportModal(false);
+                openEmail(UBS_OFFICIAL_CONTACT.email, `Support Request for Order #${order.id}`);
+              }}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.supportIconWrap, { backgroundColor: '#EFF6FF' }]}>
+                <Mail size={18} color="#2563EB" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.supportActionTitle, { color: theme.textPrimary }]}>Email Customer Care</Text>
+                <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 1 }}>
+                  {UBS_OFFICIAL_CONTACT.email}
+                </Text>
+              </View>
+              <ChevronRight size={16} color={theme.textSecondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.faqLinkBtn, { borderColor: theme.border }]}
+              onPress={() => {
+                setShowSupportModal(false);
+                router.push('/support');
+              }}
+            >
+              <HelpCircle size={16} color={theme.textPrimary} style={{ marginRight: 6 }} />
+              <Text style={[styles.faqLinkText, { color: theme.textPrimary }]}>Browse Support FAQs & Live Chat</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1474,5 +1660,68 @@ const styles = StyleSheet.create({
   actionHalfBtnText: {
     fontSize: 11,
     fontWeight: '700',
+  },
+  supportModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.lg,
+  },
+  supportModalContent: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    ...Shadows.large,
+  },
+  supportModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
+  supportModalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  supportModalSub: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: Spacing.md,
+  },
+  supportActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    marginBottom: Spacing.sm,
+    gap: 12,
+  },
+  supportIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  supportActionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  faqLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    marginTop: Spacing.xs,
+  },
+  faqLinkText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

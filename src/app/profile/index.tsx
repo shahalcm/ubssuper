@@ -26,7 +26,11 @@ import {
   AlertTriangle,
   ExternalLink as ExternalLinkIcon,
   HelpCircle,
+  Phone,
+  Mail,
+  Headphones,
 } from 'lucide-react-native';
+import { openDialer, openEmail, UBS_OFFICIAL_CONTACT } from '@/utils/contact';
 
 import { useTranslation } from '@/localization/i18n';
 import { useLanguageStore } from '@/localization/languageStore';
@@ -210,6 +214,43 @@ export default function ProfileScreen() {
               <Text style={{ fontSize: 11, color: theme.textMuted }}>Permanently remove personal account & data</Text>
             </View>
             <ChevronRight size={16} color={theme.error} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Official Customer Care Card */}
+        <Text style={[styles.sectionHeading, { color: theme.textSecondary }]}>OFFICIAL CUSTOMER CARE</Text>
+
+        <View style={[styles.menuBox, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <TouchableOpacity
+            style={styles.menuRow}
+            onPress={() => openDialer(UBS_OFFICIAL_CONTACT.phone)}
+            activeOpacity={0.7}
+          >
+            <Phone size={18} color="#16A34A" style={{ marginRight: Spacing.md }} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.menuText, { color: theme.textPrimary }]}>Customer Care Hotline</Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: theme.primary, marginTop: 2 }}>
+                {UBS_OFFICIAL_CONTACT.phone}
+              </Text>
+            </View>
+            <ChevronRight size={16} color={theme.textMuted} />
+          </TouchableOpacity>
+
+          <View style={[styles.divider, { backgroundColor: theme.borderLight }]} />
+
+          <TouchableOpacity
+            style={styles.menuRow}
+            onPress={() => openEmail(UBS_OFFICIAL_CONTACT.email, 'UBS Customer Support Request')}
+            activeOpacity={0.7}
+          >
+            <Mail size={18} color="#2563EB" style={{ marginRight: Spacing.md }} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.menuText, { color: theme.textPrimary }]}>Customer Care Email</Text>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textSecondary, marginTop: 2 }}>
+                {UBS_OFFICIAL_CONTACT.email}
+              </Text>
+            </View>
+            <ChevronRight size={16} color={theme.textMuted} />
           </TouchableOpacity>
         </View>
 

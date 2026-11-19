@@ -21,6 +21,8 @@ import { useThemeStore } from '@/store/themeStore';
 import { useTaxiStore } from '@/store/taxiStore';
 import { showCustomAlert } from '@/store/popupStore';
 import { Button } from '@/components/ui/Button';
+import { apiClient } from '@/services/api/client';
+import { RazorpayCheckoutModal } from '@/components/modals/RazorpayCheckoutModal';
 import { StatusTimeline, TimelineStep } from '@/components/ui/StatusTimeline';
 import MapView, { Marker, Polyline } from '@/components/maps/MapViewWrapper';
 import {
@@ -91,6 +93,10 @@ export default function TaxiBookingScreen() {
   ]);
   const [customMsg, setCustomMsg] = useState('');
   const [showChatModal, setShowChatModal] = useState(false);
+  const [isRazorpayRideModal, setIsRazorpayRideModal] = useState(false);
+  const [razorpayRideData, setRazorpayRideData] = useState<any | null>(null);
+  const [isProcessingRidePayment, setIsProcessingRidePayment] = useState(false);
+
 
   // Poll backend for real-time ride status transitions (driver assigned, arrived, started, completed)
   useEffect(() => {
@@ -188,7 +194,50 @@ export default function TaxiBookingScreen() {
     }
   };
 
-  const handleCompleteRating = () => {
+  const handleInitiateRidePayment = async () => {
+    if (!activeBooking) return;
+
+    if (activeBooking.paymentMethod === 'cash') {
+      finalizeRideCompletion();
+      return;
+    }
+
+    setIsProcessingRidePayment(true);
+    try {
+      const res: any = await apiClient.post(`/taxi/ride/${activeBooking.id}/payment/create-order`);
+      const rzpData = res?.data || res;
+      if (rzpData?.orderId) {
+        setRazorpayRideData(rzpData);
+        setIsRazorpayRideModal(true);
+      } else {
+        finalizeRideCompletion();
+      }
+    } catch {
+      finalizeRideCompletion();
+    } finally {
+      setIsProcessingRidePayment(false);
+    }
+  };
+
+  const handleVerifyRidePaymentSuccess = async (paymentResult: {
+    razorpay_payment_id: string;
+    razorpay_order_id: string;
+    razorpay_signature: string;
+  }) => {
+    try {
+      await apiClient.post(`/taxi/ride/${activeBooking.id}/payment/verify`, {
+        orderId: paymentResult.razorpay_order_id,
+        paymentId: paymentResult.razorpay_payment_id,
+        signature: paymentResult.razorpay_signature,
+      });
+      setIsRazorpayRideModal(false);
+      finalizeRideCompletion();
+    } catch (err: any) {
+      Alert.alert('Verification Failed', err.message || 'Payment signature verification failed.');
+    }
+  };
+
+  const finalizeRideCompletion = () => {
     completeRide(userRating, selectedTip);
     setShowRatingModal(false);
     resetTaxi();
@@ -209,6 +258,10 @@ export default function TaxiBookingScreen() {
       ],
       { type: 'success' }
     );
+  };
+
+  const handleCompleteRating = () => {
+    handleInitiateRidePayment();
   };
 
   return (
@@ -816,6 +869,28 @@ export default function TaxiBookingScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Razorpay Ride Payment Modal */}
+      <RazorpayCheckoutModal
+        visible={isRazorpayRideModal}
+        options={
+          razorpayRideData
+            ? {
+                keyId: razorpayRideData.keyId,
+                orderId: razorpayRideData.orderId,
+                amount: razorpayRideData.amount,
+                amountInPaise: razorpayRideData.amountInPaise || Math.round(razorpayRideData.amount * 100),
+                currency: razorpayRideData.currency || 'INR',
+                name: 'UBS Super Taxi',
+                description: `Trip Fare #${activeBooking.id}`,
+                onSuccess: handleVerifyRidePaymentSuccess,
+                onFailure: (err) => Alert.alert('Payment Failed', err.message),
+                onCancel: () => setIsRazorpayRideModal(false),
+              }
+            : null
+        }
+        onClose={() => setIsRazorpayRideModal(false)}
+      />
     </SafeAreaView>
   );
 }

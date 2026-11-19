@@ -26,6 +26,7 @@ import {
   PROPERTY_PHOTO_PRESETS,
   PropertyPhotoPreset,
 } from '@/services/repositories/realEstateService';
+import { RazorpayCheckoutModal, RazorpayCheckoutOptions } from '@/components/modals/RazorpayCheckoutModal';
 import { Button } from '@/components/ui/Button';
 import {
   ArrowLeft,
@@ -101,10 +102,8 @@ export default function AddPropertyScreen() {
   const [amenities, setAmenities] = useState<string[]>(['Covered Parking', 'Solar Power']);
   const [contactName, setContactName] = useState(user?.name || 'Direct Owner');
   const [contactPhone, setContactPhone] = useState(user?.phone || '+91 98765 43210');
-  const [images, setImages] = useState<string[]>([
-    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
-  ]);
+  const [images, setImages] = useState<string[]>([]);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isPhotoPickerModal, setIsPhotoPickerModal] = useState(false);
   const [customPhotoUrl, setCustomPhotoUrl] = useState('');
   const [activePresetCategory, setActivePresetCategory] = useState<string>('All');
@@ -114,15 +113,9 @@ export default function AddPropertyScreen() {
   const [step, setStep] = useState<'form' | 'review' | 'success'>('form');
   const [createdProperty, setCreatedProperty] = useState<any>(null);
 
-  // Razorpay Checkout Sheet State
+  // Razorpay Checkout Modal State
   const [isRazorpayModal, setIsRazorpayModal] = useState(false);
-  const [razorpayOrderData, setRazorpayOrderData] = useState<{
-    orderId: string;
-    amount: number;
-    currency: string;
-    propertyId: string;
-  } | null>(null);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [razorpayOptions, setRazorpayOptions] = useState<RazorpayCheckoutOptions | null>(null);
 
   // Fetch active listing fee from backend on mount
   useEffect(() => {
@@ -162,13 +155,29 @@ export default function AddPropertyScreen() {
         mediaTypes: ['images'],
         allowsMultipleSelection: true,
         quality: 0.8,
+        base64: true,
       });
       if (!res.canceled && res.assets && res.assets.length > 0) {
-        const uris = res.assets.map((a) => a.uri);
-        setImages((prev) => [...prev, ...uris]);
+        setIsUploadingPhoto(true);
+        const uploadedUrls: string[] = [];
+        for (const asset of res.assets) {
+          if (asset.base64) {
+            try {
+              const cloudRes = await realEstateService.uploadImage(`data:image/jpeg;base64,${asset.base64}`);
+              uploadedUrls.push(cloudRes.url);
+            } catch {
+              uploadedUrls.push(asset.uri);
+            }
+          } else {
+            uploadedUrls.push(asset.uri);
+          }
+        }
+        setImages((prev) => [...prev, ...uploadedUrls]);
+        setIsUploadingPhoto(false);
         setIsPhotoPickerModal(false);
       }
     } catch (err: any) {
+      setIsUploadingPhoto(false);
       Alert.alert('Gallery Error', err.message || 'Could not access device gallery');
     }
   };
@@ -182,12 +191,26 @@ export default function AddPropertyScreen() {
       }
       const res = await ImagePicker.launchCameraAsync({
         quality: 0.8,
+        base64: true,
       });
       if (!res.canceled && res.assets && res.assets.length > 0) {
-        setImages((prev) => [...prev, res.assets[0].uri]);
+        setIsUploadingPhoto(true);
+        const asset = res.assets[0];
+        let photoUrl = asset.uri;
+        if (asset.base64) {
+          try {
+            const cloudRes = await realEstateService.uploadImage(`data:image/jpeg;base64,${asset.base64}`);
+            photoUrl = cloudRes.url;
+          } catch {
+            // keep uri fallback
+          }
+        }
+        setImages((prev) => [...prev, photoUrl]);
+        setIsUploadingPhoto(false);
         setIsPhotoPickerModal(false);
       }
     } catch (err: any) {
+      setIsUploadingPhoto(false);
       Alert.alert('Camera Error', err.message || 'Could not open camera');
     }
   };
@@ -261,7 +284,7 @@ export default function AddPropertyScreen() {
   const handleInitiatePaymentAndSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // 1. Create property draft on backend with full images array
+      // 1. Create property draft on backend with images
       const draftRes = await realEstateService.createPropertyDraft({
         title,
         description,
@@ -277,9 +300,7 @@ export default function AddPropertyScreen() {
         amenities,
         contactName,
         contactPhone,
-        images: images.length > 0 ? images : [
-          'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80'
-        ],
+        images,
       });
 
       setCreatedProperty(draftRes.property);
@@ -294,11 +315,50 @@ export default function AddPropertyScreen() {
       // 3. Create Razorpay Order with server-side validated fee
       const orderData = await realEstateService.createListingOrder(draftRes.property.propertyId);
 
-      setRazorpayOrderData({
+      setRazorpayOptions({
+        keyId: orderData.keyId,
         orderId: orderData.orderId || `order_${draftRes.property.propertyId}`,
         amount: orderData.amount,
+        amountInPaise: Math.round(orderData.amount * 100),
         currency: orderData.currency || 'INR',
-        propertyId: draftRes.property.propertyId,
+        name: 'UBS Super Real Estate',
+        description: `Listing Fee for ${title}`,
+        prefill: {
+          name: contactName,
+          contact: contactPhone,
+        },
+        onSuccess: async (paymentResult) => {
+          setIsSubmitting(true);
+          try {
+            const verifyRes = await realEstateService.verifyListingPayment({
+              propertyId: draftRes.property.propertyId,
+              razorpayOrderId: paymentResult.razorpay_order_id,
+              razorpayPaymentId: paymentResult.razorpay_payment_id,
+              razorpaySignature: paymentResult.razorpay_signature,
+            });
+
+            setIsSubmitting(false);
+            setIsRazorpayModal(false);
+
+            if (verifyRes.success) {
+              setCreatedProperty(verifyRes.property);
+              setStep('success');
+            } else {
+              Alert.alert('Verification Notice', 'Payment verification could not be confirmed immediately.');
+            }
+          } catch (err: any) {
+            setIsSubmitting(false);
+            setIsRazorpayModal(false);
+            Alert.alert('Verification Error', err.message || 'Payment verification failed.');
+          }
+        },
+        onFailure: (err) => {
+          setIsRazorpayModal(false);
+          Alert.alert('Payment Failed', err.message || 'Payment could not be completed.');
+        },
+        onCancel: () => {
+          setIsRazorpayModal(false);
+        },
       });
 
       setIsSubmitting(false);
@@ -306,46 +366,6 @@ export default function AddPropertyScreen() {
     } catch (err: any) {
       setIsSubmitting(false);
       Alert.alert('Submission Error', err.message || 'Could not initiate listing fee payment');
-    }
-  };
-
-  // Handle Razorpay Payment Completion
-  const handleCompleteRazorpayPayment = async () => {
-    if (!razorpayOrderData) return;
-    setIsProcessingPayment(true);
-
-    try {
-      // Generate client-side test payment tokens for verification
-      const generatedPaymentId = `pay_${Date.now().toString().slice(-6)}`;
-      const generatedSignature = 'simulated_valid_signature';
-
-      // Verify payment signature on backend
-      const verifyRes = await realEstateService.verifyListingPayment({
-        propertyId: razorpayOrderData.propertyId,
-        razorpayOrderId: razorpayOrderData.orderId,
-        razorpayPaymentId: generatedPaymentId,
-        razorpaySignature: generatedSignature,
-      });
-
-      setIsProcessingPayment(false);
-      setIsRazorpayModal(false);
-
-      if (verifyRes.success) {
-        setCreatedProperty(verifyRes.property);
-        setStep('success');
-      } else {
-        Alert.alert(
-          'Verification Notice',
-          'Payment verification could not be confirmed immediately. Your listing is saved as pending.'
-        );
-      }
-    } catch (err: any) {
-      setIsProcessingPayment(false);
-      setIsRazorpayModal(false);
-      Alert.alert(
-        'Payment Failed',
-        err.message || 'Payment verification failed. You can retry from My Properties.'
-      );
     }
   };
 
@@ -935,17 +955,27 @@ export default function AddPropertyScreen() {
               <TouchableOpacity
                 style={[styles.uploadOptionBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
                 onPress={handlePickFromGallery}
+                disabled={isUploadingPhoto}
               >
                 <View style={[styles.uploadIconCircle, { backgroundColor: '#16A34A18' }]}>
-                  <ImageIcon size={22} color="#16A34A" />
+                  {isUploadingPhoto ? (
+                    <ActivityIndicator size="small" color="#16A34A" />
+                  ) : (
+                    <ImageIcon size={22} color="#16A34A" />
+                  )}
                 </View>
-                <Text style={[styles.uploadOptionTitle, { color: theme.textPrimary }]}>Device Gallery</Text>
-                <Text style={[styles.uploadOptionSub, { color: theme.textMuted }]}>Choose from device</Text>
+                <Text style={[styles.uploadOptionTitle, { color: theme.textPrimary }]}>
+                  {isUploadingPhoto ? 'Uploading...' : 'Device Gallery'}
+                </Text>
+                <Text style={[styles.uploadOptionSub, { color: theme.textMuted }]}>
+                  {isUploadingPhoto ? 'Saving to Cloudinary' : 'Choose from device'}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.uploadOptionBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
                 onPress={handleTakePhoto}
+                disabled={isUploadingPhoto}
               >
                 <View style={[styles.uploadIconCircle, { backgroundColor: '#2563EB18' }]}>
                   <Camera size={22} color="#2563EB" />
@@ -1019,91 +1049,13 @@ export default function AddPropertyScreen() {
       </Modal>
 
       {/* =================================================================== */}
-      {/* RAZORPAY CHECKOUT MODAL */}
+      {/* REAL RAZORPAY CHECKOUT MODAL */}
       {/* =================================================================== */}
-      <Modal visible={isRazorpayModal} transparent animationType="slide">
-        <View style={styles.razorpayOverlay}>
-          <View style={[styles.razorpaySheet, { backgroundColor: theme.card }]}>
-            {/* Header */}
-            <View style={styles.razorpayHeader}>
-              <View>
-                <View style={styles.razorpayBrandRow}>
-                  <Text style={styles.razorpayLogo}>Razorpay</Text>
-                  <View style={styles.trustedPill}>
-                    <ShieldCheck size={11} color="#047857" style={{ marginRight: 3 }} />
-                    <Text style={styles.trustedPillText}>Trusted Business</Text>
-                  </View>
-                </View>
-                <Text style={[styles.razorpaySub, { color: theme.textSecondary }]}>
-                  Property #{razorpayOrderData?.propertyId}
-                </Text>
-              </View>
-              <TouchableOpacity onPress={() => setIsRazorpayModal(false)} style={styles.closeBtn}>
-                <X size={20} color={theme.textPrimary} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Amount Banner */}
-            <View style={[styles.razorpayAmountCard, { backgroundColor: theme.surface }]}>
-              <Text style={[styles.razorpayAmountLabel, { color: theme.textSecondary }]}>
-                Listing Fee Total
-              </Text>
-              <Text style={[styles.razorpayAmountVal, { color: theme.primary }]}>
-                {formatCurrency(razorpayOrderData?.amount || activeFeeAmount)}
-              </Text>
-              <Text style={[styles.razorpayOrderRef, { color: theme.textSecondary }]}>
-                Razorpay Order: {razorpayOrderData?.orderId}
-              </Text>
-            </View>
-
-            {/* Payment Method Selector */}
-            <Text style={[styles.paymentSheetHeading, { color: theme.textPrimary }]}>
-              Select Payment Method
-            </Text>
-
-            <TouchableOpacity style={[styles.payMethodOption, { borderColor: theme.primary }]}>
-              <Zap size={20} color="#16A34A" style={{ marginRight: 12 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.payMethodTitle, { color: theme.textPrimary }]}>
-                  Instant UPI (GPay / PhonePe / Paytm)
-                </Text>
-                <Text style={[styles.payMethodSub, { color: theme.textSecondary }]}>
-                  Zero processing surcharge • Instant verification
-                </Text>
-              </View>
-              <CheckCircle2 size={18} color={theme.primary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.payMethodOption, { borderColor: theme.border }]}>
-              <CreditCard size={20} color="#2563EB" style={{ marginRight: 12 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.payMethodTitle, { color: theme.textPrimary }]}>
-                  Debit / Credit Card (Visa, RuPay, Master)
-                </Text>
-                <Text style={[styles.payMethodSub, { color: theme.textSecondary }]}>
-                  3D Secure OTP verification
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Complete Payment Button */}
-            <View style={styles.modalCta}>
-              <Button
-                title={`Pay ${formatCurrency(razorpayOrderData?.amount || activeFeeAmount)} via Razorpay`}
-                onPress={handleCompleteRazorpayPayment}
-                variant="primary"
-                size="lg"
-                loading={isProcessingPayment}
-                icon={<ShieldCheck size={18} color="#FFFFFF" />}
-              />
-            </View>
-
-            <Text style={styles.securityFooterText}>
-              🔒 256-Bit SSL Encrypted • Powered by Razorpay Gateway
-            </Text>
-          </View>
-        </View>
-      </Modal>
+      <RazorpayCheckoutModal
+        visible={isRazorpayModal}
+        options={razorpayOptions}
+        onClose={() => setIsRazorpayModal(false)}
+      />
     </SafeAreaView>
   );
 }

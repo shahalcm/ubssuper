@@ -42,7 +42,10 @@ import {
   Flame,
   ArrowRight,
   ShieldCheck,
+  Phone,
+  Mail,
 } from 'lucide-react-native';
+import { openDialer, openEmail, UBS_OFFICIAL_CONTACT } from '@/utils/contact';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -294,6 +297,69 @@ export default function RestaurantDetailScreen() {
             </View>
           </TouchableOpacity>
         </View>
+
+        {/* Contact Restaurant Section */}
+        {(() => {
+          const isCareCustom = !!(
+            restaurant.customerCare &&
+            ((restaurant.customerCare.phoneNumber && restaurant.customerCare.phoneNumber.trim().length > 0) ||
+              (restaurant.customerCare.email && restaurant.customerCare.email.trim().length > 0))
+          );
+          const storePhone = isCareCustom && restaurant.customerCare?.phoneNumber
+            ? `${restaurant.customerCare.phoneCountryCode || '+91'} ${restaurant.customerCare.phoneNumber}`
+            : UBS_OFFICIAL_CONTACT.phone;
+          const storeEmail = isCareCustom && restaurant.customerCare?.email
+            ? restaurant.customerCare.email
+            : UBS_OFFICIAL_CONTACT.email;
+
+          return (
+            <View style={[styles.contactCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <View style={styles.contactHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Phone size={15} color="#16A34A" />
+                  <Text style={[styles.contactHeading, { color: theme.textPrimary }]}>
+                    Contact Store
+                  </Text>
+                </View>
+                <View style={[styles.contactBadge, { backgroundColor: isCareCustom ? '#DCFCE7' : '#EFF6FF' }]}>
+                  <Text style={[styles.contactBadgeText, { color: isCareCustom ? '#15803D' : '#1D4ED8' }]}>
+                    {isCareCustom ? 'Verified Store Desk' : 'UBS Customer Care Fallback'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.contactButtonsRow}>
+                <TouchableOpacity
+                  style={[styles.contactBtn, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}
+                  onPress={() => openDialer(storePhone)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.contactBtnIcon, { backgroundColor: '#DCFCE7' }]}>
+                    <Phone size={13} color="#16A34A" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.contactBtnSub}>Store Phone</Text>
+                    <Text style={styles.contactBtnMain} numberOfLines={1}>{storePhone}</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.contactBtn, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}
+                  onPress={() => openEmail(storeEmail, `Customer inquiry regarding ${restaurant.name}`)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.contactBtnIcon, { backgroundColor: '#DBEAFE' }]}>
+                    <Mail size={13} color="#2563EB" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.contactBtnSub}>Store Email</Text>
+                    <Text style={styles.contactBtnMain} numberOfLines={1}>{storeEmail}</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })()}
 
         {/* 🌟 4. SEARCH DISHES IN RESTAURANT */}
         <View style={styles.searchSection}>
@@ -981,6 +1047,64 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     marginTop: Spacing.xs,
     marginBottom: Spacing.sm,
+  },
+  contactCard: {
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xs,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+  },
+  contactHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
+  contactHeading: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  contactBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
+  contactBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  contactButtonsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  contactBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+  },
+  contactBtnIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contactBtnSub: {
+    fontSize: 10,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  contactBtnMain: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
   },
   menuSearchBar: {
     flexDirection: 'row',

@@ -116,6 +116,7 @@ export const superAppService = {
           isPureVeg: s.isPureVeg,
           latitude: s.latitude ?? s.location?.coordinates?.[1],
           longitude: s.longitude ?? s.location?.coordinates?.[0],
+          customerCare: s.customerCare || undefined,
           location: s.location || (s.latitude && s.longitude ? { type: 'Point', coordinates: [s.longitude, s.latitude] } : undefined),
         }));
       }
@@ -154,6 +155,7 @@ export const superAppService = {
           isPureVeg: s.isPureVeg,
           latitude: s.latitude ?? s.location?.coordinates?.[1],
           longitude: s.longitude ?? s.location?.coordinates?.[0],
+          customerCare: s.customerCare || undefined,
           location: s.location || (s.latitude && s.longitude ? { type: 'Point', coordinates: [s.longitude, s.latitude] } : undefined),
         };
       }
@@ -309,9 +311,19 @@ export const superAppService = {
         storeDescription: s.storeDescription,
         deliveryFee: s.deliveryFee,
         minOrderAmount: s.minOrderAmount,
+        customerCare: s.customerCare || undefined,
       };
     }
     return null;
+  },
+
+  async getStoreCustomerCare(storeId: string) {
+    try {
+      const res: any = await apiClient.get(`/content/stores/${storeId}/customer-care`);
+      return res?.data || res;
+    } catch {
+      return null;
+    }
   },
 
   async getDishesByRestaurant(restaurantId: string) {

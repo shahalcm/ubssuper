@@ -2,7 +2,8 @@
   "expo": {
     "name": "UBS Super",
     "slug": "ubssuper",
-    "version": "1.0.1",
+    "owner": "ubsglobalapp923",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "ubssuper",
@@ -15,8 +16,9 @@
       }
     },
     "android": {
-      "package": "com.ubsglobal.app",
-      "versionCode": 4,
+      "package": "com.natechsys.ubssuper",
+      "versionCode": 8,
+      "googleServicesFile": "./google-services.json",
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyDmp6Hp5e-BlIQ9XmseAEyqRGnrFXISZcw"
@@ -32,7 +34,9 @@
         "ACCESS_COARSE_LOCATION",
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "WRITE_EXTERNAL_STORAGE",
+        "POST_NOTIFICATIONS",
+        "FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "web": {
@@ -49,7 +53,15 @@
           "imageWidth": 220
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#0F5132",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

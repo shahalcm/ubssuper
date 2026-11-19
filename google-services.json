@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "673676244024",
+    "project_id": "ubs-super",
+    "storage_bucket": "ubs-super.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:673676244024:android:8eb3a2535866d0ef9fe2cd",
+        "android_client_info": {
+          "package_name": "com.natechsys.ubssuper"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbKeafv-e4-klGht151nNXR0LHkturnr4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

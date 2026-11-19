@@ -54,9 +54,13 @@ import {
   FileText,
   Compass,
   Globe,
+  Phone,
+  Mail,
+  Headphones,
 } from 'lucide-react-native';
 import { useTranslation } from '@/localization/i18n';
 import { useLanguageStore } from '@/localization/languageStore';
+import { openDialer, openEmail, UBS_OFFICIAL_CONTACT } from '@/utils/contact';
 
 interface ServiceItem {
   id: string;
@@ -649,6 +653,42 @@ export default function MoreServicesScreen() {
               <View>
                 <Text style={[styles.settingsRowTitle, { color: theme.textPrimary }]}>Help & Customer Support</Text>
                 <Text style={[styles.settingsRowSub, { color: theme.textSecondary }]}>Live chat, FAQs & ticket status</Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color={theme.textSecondary} />
+          </TouchableOpacity>
+
+          {/* Customer Care Phone Hotline */}
+          <TouchableOpacity
+            style={[styles.settingsRow, { borderBottomColor: theme.border }]}
+            activeOpacity={0.75}
+            onPress={() => openDialer(UBS_OFFICIAL_CONTACT.phone)}
+          >
+            <View style={styles.settingsRowLeft}>
+              <View style={[styles.settingsIconWrap, { backgroundColor: '#16A34A15' }]}>
+                <Phone size={17} color="#16A34A" />
+              </View>
+              <View>
+                <Text style={[styles.settingsRowTitle, { color: theme.textPrimary }]}>Customer Care Hotline</Text>
+                <Text style={[styles.settingsRowSub, { color: '#16A34A', fontWeight: '700' }]}>{UBS_OFFICIAL_CONTACT.phone} (24/7)</Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color={theme.textSecondary} />
+          </TouchableOpacity>
+
+          {/* Customer Care Email */}
+          <TouchableOpacity
+            style={[styles.settingsRow, { borderBottomColor: theme.border }]}
+            activeOpacity={0.75}
+            onPress={() => openEmail(UBS_OFFICIAL_CONTACT.email, 'UBS Super Customer Query')}
+          >
+            <View style={styles.settingsRowLeft}>
+              <View style={[styles.settingsIconWrap, { backgroundColor: '#2563EB15' }]}>
+                <Mail size={17} color="#2563EB" />
+              </View>
+              <View>
+                <Text style={[styles.settingsRowTitle, { color: theme.textPrimary }]}>Customer Care Email</Text>
+                <Text style={[styles.settingsRowSub, { color: theme.textSecondary }]}>{UBS_OFFICIAL_CONTACT.email}</Text>
               </View>
             </View>
             <ChevronRight size={16} color={theme.textSecondary} />

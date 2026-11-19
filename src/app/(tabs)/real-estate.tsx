@@ -182,11 +182,19 @@ export default function RealEstateScreen() {
             </View>
           ) : properties.length === 0 ? (
             <View style={[styles.emptyBox, { backgroundColor: theme.card, borderColor: theme.border }]}>
-              <Building2 size={36} color={theme.textMuted} style={{ marginBottom: 8 }} />
-              <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>No Properties Found</Text>
+              <Building2 size={40} color={theme.textMuted} style={{ marginBottom: 10 }} />
+              <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>No Properties Listed Yet</Text>
               <Text style={[styles.emptySub, { color: theme.textSecondary }]}>
-                Be the first to list a property in this area.
+                Real properties listed by verified owners will appear here. Be the first to list!
               </Text>
+              <TouchableOpacity
+                style={[styles.emptyCtaBtn, { backgroundColor: theme.primary }]}
+                onPress={() => router.push('/real-estate/add-property' as any)}
+                activeOpacity={0.8}
+              >
+                <Plus size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={styles.emptyCtaText}>List Your Property</Text>
+              </TouchableOpacity>
             </View>
           ) : (
             properties.map((prop) => (
@@ -465,6 +473,20 @@ const styles = StyleSheet.create({
   emptySub: {
     fontSize: 12,
     marginTop: 4,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  emptyCtaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: BorderRadius.full,
+  },
+  emptyCtaText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
   photoCountBadge: {
     position: 'absolute',
